@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>မောင် နဲ့ ပုပု · အချစ်ကဗျာ 💗</title>
+    <!-- GSAP & Confetti (no external images/audio) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Montserrat:wght@200;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --p: #ff0055;
+            --p-light: #ff8da1;
+            --bg-dark: #0a0010;
+            --bg-radial: radial-gradient(circle at 30% 30%, #2d0b2a, #050005);
+            --gold: #ffd966;
+        }
+
+        body {
+            background: var(--bg-radial);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ---- နောက်ခံနှလုံးသားမိုး (SVG ပုံစံ) ---- */
+        .heart-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .heart-svg {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            opacity: 0.5;
+            animation: floatHeart linear infinite;
+            filter: drop-shadow(0 0 5px #ff4d6d);
+        }
+
+        @keyframes floatHeart {
+            0% { transform: translateY(110vh) rotate(0deg) scale(1); opacity: 0.2; }
+            100% { transform: translateY(-10vh) rotate(360deg) scale(1.5); opacity: 0; }
+        }
+
+        /* ---- Main scene container ---- */
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            padding: 1.5rem;
+            background: transparent;
+            backdrop-filter: blur(2px);
+        }
+
+        .scene.active {
+            display: flex;
+        }
+
+        /* ---- Heart Scene (အစပိုင်းမှာ နှလုံးသားလေး) ---- */
+        .heart-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+
+        .big-heart {
+            width: 100%;
+            height: 100%;
+            background: #ff4d6d;
+            position: relative;
+            transform: rotate(45deg);
+            animation: heartbeat 1.5s infinite ease-in-out;
+            box-shadow: 0 0 40px #ff1744;
+            border-radius: 0 0 20px 0;
+        }
+
+        .big-heart::before,
+        .big-heart::after {
+            content: '';
+            width: 100%;
+            height: 100%;
+            background: #ff4d6d;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 40px #ff1744;
+        }
+
+        .big-heart::before {
+            left: -50%;
+            top: 0;
+        }
+
+        .big-heart::after {
+            top: -50%;
+            left: 0;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: rotate(45deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            40% { transform: rotate(45deg) scale(1); }
+            60% { transform: rotate(45deg) scale(1.15); }
+            100% { transform: rotate(45deg) scale(1); }
+        }
+
+        .heart-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 600;
+            z-index: 10;
+            text-align: center;
+            width: 100%;
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* ---- Wish Text ---- */
+        #wish-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(2.8rem, 12vw, 4.5rem);
+            color: #ffb3c6;
+            text-shadow: 0 0 15px #ff4d6d, 0 0 30px #ff4d6d;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* ---- Love Note (replaces book gallery) ---- */
+        .love-note-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 40px;
+            padding: 35px 25px;
+            max-width: 450px;
+            width: 90%;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 40px #ff4d6d, inset 0 0 20px #ffb6c1;
+            margin: 20px auto;
+        }
+
+        #loveNoteText {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.8rem;
+            color: #fff0f5;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ---- Heart Matrix (အသည်းပုံစီထားတဲ့ သင်္ကေတများ) ---- */
+        #heartArea {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            max-width: 90vw;
+            max-height: 90vw;
+            margin: 0 auto;
+        }
+        .heart-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            position: absolute;
+            border: 3px solid white;
+            box-shadow: 0 0 20px #ff4d6d;
+            opacity: 0;
+            scale: 0;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ff8da1;
+            color: #7a1f3a;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .heart-photo:hover {
+            transform: scale(1.1);
+            border-color: gold;
+        }
+
+        /* ---- Gift Box ---- */
+        #gift-icon {
+            font-size: 120px;
+            cursor: pointer;
+            animation: pulse 1.5s infinite ease-in-out;
+            filter: drop-shadow(0 10px 10px #ff4d6d);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* ---- Connecting Line ---- */
+        .connect-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 15px 20px;
+            border-radius: 50px;
+            width: 90%;
+            max-width: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px #0003;
+        }
+        .profile-pic {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid var(--p);
+            background: #ffe6f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #a52a5a;
+        }
+        .line-path {
+            flex-grow: 1;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 15px;
+            position: relative;
+            border-radius: 3px;
+        }
+        .moving-heart {
+            position: absolute;
+            top: -14px;
+            left: 0;
+            font-size: 24px;
+            filter: drop-shadow(0 0 5px #ff4d6d);
+        }
+
+        #final-type {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #fbe4ec;
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-shadow: 0 2px 5px #0005;
+            font-family: 'Dancing Script', cursive;
+        }
+
+        button {
+            padding: 16px 32px;
+            border: none;
+            background: var(--p);
+            color: white;
+            font-weight: 800;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #a52a5a, 0 10px 20px #0003;
+            transition: 0.1s;
+            border: 2px solid white;
+            margin: 5px;
+        }
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #a52a5a, 0 10px 20px #0003;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ffb3c6;
+            border-top: 5px solid #ff0055;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            #wish-text { font-size: 2.5rem; }
+            .profile-pic { width: 45px; height: 45px; }
+            button { padding: 12px 20px; font-size: 1rem; }
+            .heart-container { width: 150px; height: 150px; }
+            #loveNoteText { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- နောက်ခံနှလုံးသားမိုး (SVG ပုံစံ) -->
+<div id="heartRain" class="heart-rain"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="position:fixed; inset:0; background:var(--bg-dark); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="loader"></div>
+    <p style="margin-top:20px; color:#ffb3c6;">မောင်က ပုပုအတွက် ပြင်ဆင်နေတယ်... 💗</p>
+</div>
+
+<!-- Scene 1 – Big Heart (click to start) -->
+<div id="s1" class="scene active" style="display: flex; opacity: 1;">
+    <div class="heart-container" onclick="startFlow()">
+        <div class="big-heart"></div>
+        <div class="heart-text">မောင် ❤️ ပုပု</div>
+    </div>
+    <h2 style="margin-top: 50px; letter-spacing: 3px; font-weight: 300; font-size: 1.5rem;">ဒီနှလုံးသားလေးကို နှိပ်လိုက်ပါနော်</h2>
+    <p style="color: #ffb3c6; margin-top: 10px;">(မောင့်ရဲ့ချစ်ခြင်းတွေ ပေါ်လာမယ်)</p>
+</div>
+
+<!-- Scene 2 – Heart animation (simple) -->
+<div id="s2" class="scene">
+    <h1 id="heart-animation" style="font-size: 8rem; animation: heartbeat 1s infinite;">❤️</h1>
+    <p style="margin-top: 20px;">မောင့်နှလုံးသားက ပုပုအတွက်ပါ</p>
+</div>
+
+<!-- Scene 3 – Love Note (replaces photo gallery) -->
+<div id="s3" class="scene">
+    <h3 style="margin-bottom: 15px; font-weight: 200; letter-spacing: 4px;">✨ မောင့်စကားသံ ✨</h3>
+    <div class="love-note-container">
+        <div id="loveNoteText"></div>
+    </div>
+    <p style="margin-top: 20px; color:#ffb3c6;" id="noteHint">💌 မောင့်ရင်ထဲက စကားလုံးများ</p>
+</div>
+
+<!-- Scene 4 – Heart Matrix (အသည်းပုံစီထားတဲ့ သင်္ကေတများ) -->
+<div id="s4" class="scene">
+    <h3 style="margin-bottom: 10px;">💞 မောင့်နှလုံးသားထဲက ပုပု 💞</h3>
+    <div id="heartArea"></div>
+</div>
+
+<!-- Scene 5 – Gift Box -->
+<div id="s5" class="scene">
+    <div id="gift-icon" onclick="openGift()">🎁</div>
+    <h3 style="margin-top: 25px; letter-spacing: 3px;">မောင့်လက်ဆောင် ဖွင့်ကြည့်ပါနော်</h3>
+    <p style="color:#ffb3c6;">နှလုံးသားလေး နှိပ်လိုက်</p>
+</div>
+
+<!-- Scene 6 – Final Love Message -->
+<div id="s6" class="scene">
+    <div class="connect-container">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div class="profile-pic">မောင်</div>
+            <span style="font-size:10px; margin-top:5px;">Myanmar</span>
+        </div>
+        <div class="line-path"><div id="m-heart" class="moving-heart">❤️</div></div>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div class="profile-pic">ပုပု</div>
+            <span style="font-size:10px; margin-top:5px;">Thailand</span>
+        </div>
+    </div>
+    <h1 style="font-family:'Dancing Script'; color:var(--p-light); font-size:2.5rem; margin-top:20px;">မောင် ချစ်တဲ့ ပုပု ❤️</h1>
+    <div id="final-type"></div>
+    
+    <!-- ပြန်စရန် ခလုတ် -->
+    <div style="display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap; justify-content: center;">
+        <button onclick="restartExperience()" style="background: #ffb3c6; color: #a52a5a;">🔄 နောက်တစ်ခါ ပြန်ကြည့်မယ်</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---- နှလုံးသားမိုး (SVG heart rain) ----
+        const heartRain = document.getElementById('heartRain');
+        function createHeartSVG() {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("class", "heart-svg");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.style.left = Math.random() * 100 + "%";
+            svg.style.animationDuration = (5 + Math.random() * 7) + "s";
+            svg.style.animationDelay = (Math.random() * 5) + "s";
+            svg.style.width = (15 + Math.random() * 25) + "px";
+            
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+            path.setAttribute("fill", `hsl(${340 + Math.random()*20}, 80%, 65%)`);
+            path.setAttribute("opacity", "0.5");
+            svg.appendChild(path);
+            heartRain.appendChild(svg);
+            
+            setTimeout(() => { if(svg.parentNode) svg.remove(); }, 12000);
+        }
+        setInterval(createHeartSVG, 400);
+        for(let i=0;i<10;i++) setTimeout(createHeartSVG, i*100);
+
+        // ---- Loading Overlay ဖျောက် ----
+        setTimeout(() => {
+            document.getElementById('loadingOverlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 1000);
+        }, 1500);
+
+        // ---- Helper: Scene Transition (no audio) ----
+        window.go = function(fromId, toId, callback) {
+            const from = document.getElementById(fromId);
+            const to = document.getElementById(toId);
+            gsap.to(from, { opacity: 0, scale: 0.8, duration: 0.6, onComplete: () => {
+                from.classList.remove('active');
+                from.style.display = 'none';
+                to.classList.add('active');
+                to.style.display = 'flex';
+                gsap.fromTo(to, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.7, onComplete: callback });
+            }});
+        };
+
+        // ---- Scene 1: Heart click ----
+        window.startFlow = function() {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.5 } });
+            go('s1', 's2', () => {
+                setTimeout(() => {
+                    go('s2', 's3', showLoveNote);
+                }, 2000);
+            });
+        };
+
+        // ---- Scene 3: Love Note (typewriter effect) ----
+        function showLoveNote() {
+            const noteEl = document.getElementById('loveNoteText');
+            // Beautiful Burmese love message (no photos mentioned)
+            const message = "ပုပုရေ... ဒီနေ့ဟာ ငါတို့အတွက် အထူးနေ့တစ်နေ့ပါ။ မောင်က ပုပုကို အရမ်းချစ်တယ်။ မောင့်ဘဝမှာ ပုပုရှိနေတာ မောင့်ကံကြမ္မာပဲ။ ဒီချစ်ခြင်းကို ထာဝရတန်ဖိုးထားမယ်။ ပုပုရဲ့အပြုံးတစ်ချက်စီဟာ မောင့်အတွက် နေရောင်ခြည်ပါပဲ။ မောင့်ရဲ့ချစ်ခြင်းတွေကို ဒီစကားလုံးလေးတွေနဲ့ ဖော်ပြလိုက်တယ်။ ချစ်တယ် ပုပု 💕";
+            let i = 0;
+            noteEl.innerHTML = '';
+            let interval = setInterval(() => {
+                if (i < message.length) {
+                    noteEl.innerHTML += message[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    // After typing, wait a bit then go to scene 4
+                    setTimeout(() => {
+                        go('s3', 's4', animateHeartMatrix);
+                    }, 2000);
+                }
+            }, 60);
+        }
+
+        // ---- Scene 4: Heart Matrix (all placeholders, no images) ----
+        function animateHeartMatrix() {
+            const area = document.getElementById('heartArea');
+            area.innerHTML = '';
+            const totalPoints = 20;
+            const heartEmojis = ['💕','💗','💓','💞','❤️','🧡','💖','💘','💝','💟'];
+            const width = area.offsetWidth, height = area.offsetHeight;
+            
+            for (let i = 0; i < totalPoints; i++) {
+                const t = (i / totalPoints) * (2 * Math.PI);
+                // parametric heart equation
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                const posX = width/2 + x * 10;
+                const posY = height/2 + y * 10;
+
+                const div = document.createElement('div');
+                div.className = 'heart-photo';
+                div.innerText = heartEmojis[i % heartEmojis.length];
+                div.style.left = posX + "px";
+                div.style.top = posY + "px";
+                area.appendChild(div);
+
+                gsap.to(div, { opacity: 1, scale: 1, delay: i * 0.12, duration: 0.8, ease: "back.out(1.7)" });
+            }
+
+            // Auto transition to scene 5
+            setTimeout(() => {
+                go('s4', 's5');
+            }, totalPoints * 120 + 1500);
+        }
+
+        // ---- Scene 5: Gift open ----
+        window.openGift = function() {
+            confetti({ particleCount: 300, spread: 100, startVelocity: 25 });
+            go('s5', 's6', finalScene);
+        };
+
+        // ---- Scene 6: Final Love Poem (Burmese only) ----
+        function finalScene() {
+            gsap.to("#m-heart", { left: "85%", duration: 4, repeat: -1, yoyo: true, ease: "power1.inOut" });
+            
+            // မောင့် ချစ်ကဗျာ (မောင်နဲ့ ပုပု ပဲသုံး)
+            const txt = "ပုပုရေ... မောင်တို့ ချစ်သူတွေဖြစ်တာနှစ်တွေကြာပေမယ့်လေပုပုကို နေ့တိုင်းမြင်ရတိုင်း ပထမဆုံးအကြိမ် မြင်ရသလိုမျိုး မောင်ရင်ခုန်နေတုန်းပဲ။ ပုပုရဲ့အပြုံးတစ်ချက်က မောင့်ကမ္ဘာကို လင်းစေတယ်။ ပုပုရဲ့မျက်ဝန်းတစ်စုံက မောင့်ညတွေကို လရောင်လင်းစေတယ်။ ချစ်ခြင်းဆိုတာ စကားလုံးတွေနဲ့ မရှင်းပြနိုင်ဘူး။ ဒါပေမယ့် ပုပုသိစေချင်တယ်... မောင့်နှလုံးသားဟာ မနေ့ကထက် ဒီနေ့ ဒီနေ့ထက် မနက်ဖြန် ပုပုကိုပိုပြီး ချစ်နေလိမ့်မယ်။ ပုပုက မောင့်ရဲ့ မနက်ခင်းနေရောင်ခြည် မောင့်ရဲ့ညချမ်းလရောင် မောင့်ရဲ့ အတိတ်၊ ပစ္စုပ္ပန်နဲ့ အနာဂတ် အားလုံးပေါင်းစုံပါပဲ။ ချစ်တယ် ပုပုရေ... အရင်ကထက်လည်း ပိုချစ်တယ်။ အခုလည်း ချစ်တယ်။ နောင်လည်း ဒီထက်ပိုပြီး ချစ်နေဦးမယ်။ မောင့်ရင်ခွင်ဟာ ပုပုအတွက် အမြဲဖွင့်ထားတယ်။ မောင့်လက်တွေကလည်း ပုပုလက်ကို တစ်သက်လုံး တွဲထားဖို့ အဆင်သင့်ပါပဲ။ ထာဝရ ချစ်တဲ့ မောင်";
+            
+            const typeEl = document.getElementById('final-type');
+            typeEl.innerHTML = '';
+            let i = 0;
+            let itv = setInterval(() => {
+                if (i < txt.length) {
+                    typeEl.innerHTML += txt[i];
+                    i++;
+                } else {
+                    clearInterval(itv);
+                }
+            }, 40);
+        }
+
+        // ---- Restart (reset everything) ----
+        window.restartExperience = function() {
+            const scenes = ['s1','s2','s3','s4','s5','s6'];
+            scenes.forEach(id => {
+                document.getElementById(id).classList.remove('active');
+                document.getElementById(id).style.display = 'none';
+            });
+            const s1 = document.getElementById('s1');
+            s1.classList.add('active');
+            s1.style.display = 'flex';
+            gsap.set(s1, { opacity: 1, scale: 1 });
+            
+            // Clear dynamic content
+            document.getElementById('loveNoteText').innerHTML = '';
+            document.getElementById('heartArea').innerHTML = '';
+            document.getElementById('final-type').innerHTML = '';
+        };
+    })();
+</script>
+</body>
+</html>
